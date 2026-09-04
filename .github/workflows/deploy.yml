@@ -24,9 +24,10 @@ jobs:
             --exclude='mongodb-backup' \
             --exclude='node_modules' \
             --exclude='client/.next' \
-            -czf /tmp/remise-deploy.tar.gz .
+            --exclude='remise-deploy.tar.gz' \
+            -czf remise-deploy.tar.gz .
 
-          ls -lh /tmp/remise-deploy.tar.gz
+          ls -lh remise-deploy.tar.gz
 
       - name: Upload deployment archive
         uses: appleboy/scp-action@v1.0.0
@@ -35,8 +36,8 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
-          source: "/tmp/remise-deploy.tar.gz"
-          target: "/tmp"
+          source: "remise-deploy.tar.gz"
+          target: "/root"
 
       - name: Deploy and restart Docker
         uses: appleboy/ssh-action@v1.0.3
@@ -50,6 +51,16 @@ jobs:
             set -e
 
             PROJECT="/var/www/remise"
+            ARCHIVE="/root/remise-deploy.tar.gz"
+
+            echo "=== Checking deployment archive ==="
+
+            if [ ! -f "$ARCHIVE" ]; then
+              echo "ERROR: Deployment archive not found at $ARCHIVE"
+              exit 1
+            fi
+
+            ls -lh "$ARCHIVE"
 
             echo "=== Preparing deployment ==="
 
@@ -57,9 +68,9 @@ jobs:
 
             echo "=== Extracting new code ==="
 
-            tar -xzf /tmp/remise-deploy.tar.gz -C "$PROJECT"
+            tar -xzf "$ARCHIVE" -C "$PROJECT"
 
-            rm -f /tmp/remise-deploy.tar.gz
+            rm -f "$ARCHIVE"
 
             cd "$PROJECT"
 
