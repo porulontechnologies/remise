@@ -17,7 +17,7 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
 
           script: |
@@ -29,20 +29,13 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
-            echo "Building frontend..."
-            cd client
-            npm ci
-            npm run build
-
-            echo "Restarting frontend..."
-            pm2 restart remise-frontend
-
-            echo "Starting backend services..."
-            cd ..
-            docker compose pull || true
+            echo "Building and restarting Docker services..."
             docker compose up -d --build
 
             echo "Cleaning unused Docker images..."
             docker image prune -f
+
+            echo "Checking services..."
+            docker compose ps
 
             echo "Deployment completed!"
