@@ -8,45 +8,69 @@ on:
 
 jobs:
   deploy:
-    name: Deploy
+    name: Deploy Remise
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy project to VPS
-        uses: appleboy/scp-action@v0.1.7
+      - name: Create deployment archive
+        run: |
+          tar \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='*/.env' \
+            --exclude='mongodb-backup' \
+            --exclude='node_modules' \
+            --exclude='client/.next' \
+            -czf remise-deploy.tar.gz .
+
+      - name: Upload deployment archive
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
-          source: "."
-          target: ${{ secrets.VPS_PROJECT_PATH }}
-          rm: false
-          overwrite: true
+          port: 22
+          source: "remise-deploy.tar.gz"
+          target: "/tmp"
 
-      - name: Build and restart Docker services
+      - name: Deploy and restart Docker
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
+          port: 22
 
           script: |
             set -e
 
-            cd ${{ secrets.VPS_PROJECT_PATH }}
+            PROJECT="/var/www/remise"
 
-            echo "Building and restarting Docker services..."
+            echo "=== Preparing deployment ==="
+
+            mkdir -p "$PROJECT"
+
+            echo "=== Extracting new code ==="
+
+            tar -xzf /tmp/remise-deploy.tar.gz -C "$PROJECT"
+
+            rm -f /tmp/remise-deploy.tar.gz
+
+            cd "$PROJECT"
+
+            echo "=== Building and restarting Docker services ==="
+
             docker compose up -d --build
 
-            echo "Cleaning unused Docker images..."
+            echo "=== Cleaning unused Docker images ==="
+
             docker image prune -f
 
-            echo "Checking services..."
+            echo "=== Checking services ==="
+
             docker compose ps
 
-            echo "Deployment completed!"
+            echo "=== Deployment completed successfully ==="
