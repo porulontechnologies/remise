@@ -17,6 +17,7 @@ import {
   Truck,
   Home,
   UserCheck,
+  Key,
   RefreshCw,
   AlertCircle,
   Clock,
@@ -209,6 +210,7 @@ export default function DashboardPage() {
     totalWholesalers: 0,
     totalHomeBusinesses: 0,
     totalUsers: 0,
+    tokensUsed: 0,
     recentOrders: []
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -262,6 +264,7 @@ export default function DashboardPage() {
         totalWholesalers: data.totalWholesalers ?? 0,
         totalHomeBusinesses: data.totalHomeBusinesses ?? 0,
         totalUsers: data.totalUsers ?? 0,
+        tokensUsed: data.tokensUsed ?? 0,
       });
 
       if (data.recentOrders && Array.isArray(data.recentOrders)) {
@@ -380,6 +383,17 @@ export default function DashboardPage() {
       tagColor: 'text-sky-700 bg-sky-50',
       icon: UserCheck,
       iconBg: 'bg-sky-50 text-sky-600',
+    },
+    // 9. NEW: Tokens Used
+    {
+      id: 'tokens-used',
+      title: 'Tokens Used',
+      value: (stats.tokensUsed || 0).toLocaleString('en-IN'),
+      rawValue: stats.tokensUsed,
+      tag: 'System Tokens',
+      tagColor: 'text-violet-700 bg-violet-50',
+      icon: Key,
+      iconBg: 'bg-violet-50 text-violet-600',
     },
   ];
 

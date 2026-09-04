@@ -2,6 +2,7 @@ const axios = require('axios');
 const User = require('../models/User');
 
 const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://localhost:3003';
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3001';
 
 const syncCart = async (req, res) => {
   try {
@@ -143,10 +144,15 @@ const getAdminDashboardStats = async (req, res) => {
     try {
       const prodRes = await axios.get(`${PRODUCT_SERVICE_URL}/api/products?limit=1`);
       if (prodRes.data?.success) {
-        totalProducts = prodRes.data.total || prodRes.data.count || 0;
+    // Fetch tokens count from auth-service
+    let tokensUsed = 0;
+    try {
+      const authRes = await axios.get(`${AUTH_SERVICE_URL}/api/auth/internal/tokens-count`);
+      if (authRes.data?.success && authRes.data?.data) {
+        tokensUsed = authRes.data.data.tokensUsed || 0;
       }
     } catch (err) {
-      console.error('Could not fetch products total from product-service:', err.message);
+      console.error('Could not fetch tokens count from auth-service:', err.message);
     }
 
     res.status(200).json({
@@ -160,6 +166,7 @@ const getAdminDashboardStats = async (req, res) => {
         totalWholesalers,
         totalHomeBusinesses,
         totalUsers,
+        tokensUsed,
         recentOrders,
       },
     });

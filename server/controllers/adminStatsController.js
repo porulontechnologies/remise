@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const User = require('../models/User');
 const Product = require('../models/Product');
+const Token = require('../models/Token');
 
 /**
  * @desc    Get Admin Dashboard Statistics
@@ -18,6 +19,7 @@ const getAdminDashboardStats = async (req, res) => {
       totalWholesalers,
       totalHomeBusinesses,
       totalUsers,
+      totalTokens,
       recentOrdersRaw
     ] = await Promise.all([
       // Total Revenue: Excludes failed payments and cancelled orders
@@ -49,6 +51,8 @@ const getAdminDashboardStats = async (req, res) => {
       User.countDocuments({ role: 'home_business' }),
       // Total Users (all non-admin registered accounts)
       User.countDocuments({ role: { $ne: 'admin' } }),
+      // Total Tokens Used / Issued
+      Token.countDocuments().catch(() => 0),
       // Recent Orders for dashboard list
       Order.find()
         .sort({ createdAt: -1 })
@@ -103,6 +107,7 @@ const getAdminDashboardStats = async (req, res) => {
         totalWholesalers,
         totalHomeBusinesses,
         totalUsers,
+        tokensUsed: totalTokens || 0,
         recentOrders: formattedRecentOrders
       }
     });

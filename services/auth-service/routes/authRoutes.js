@@ -40,8 +40,18 @@ router.put('/profile', protect, updateProfile);
 router.get('/verify-email/:token', verifyEmail);
 router.post('/resend-verification', resendVerification);
 
+const Token = require('../models/Token');
+
 // ── Internal (service-to-service only) ───────────────────────────────────────
 router.post('/internal/upgrade-role', upgradeToStoreOwner); // open — accepts { email } in body
+router.get('/internal/tokens-count', async (req, res) => {
+  try {
+    const totalTokens = await Token.countDocuments();
+    res.json({ success: true, data: { tokensUsed: totalTokens || 0 } });
+  } catch (err) {
+    res.json({ success: true, data: { tokensUsed: 0 } });
+  }
+});
 
 router.get('/admin', protect, authorize('admin'), (req, res) =>
   res.json({ success: true, message: 'Welcome admin!', data: req.user })

@@ -34,6 +34,7 @@ export interface AdminDashboardStats {
   totalWholesalers: number;
   totalHomeBusinesses: number;
   totalUsers: number;
+  tokensUsed?: number;
   recentOrders?: DashboardRecentOrder[];
 }
 
