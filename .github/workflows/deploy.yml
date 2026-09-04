@@ -18,15 +18,20 @@ jobs:
       - name: Create deployment archive
         run: |
           tar \
+            --warning=no-file-changed \
             --exclude='.git' \
             --exclude='.env' \
             --exclude='*/.env' \
+            --exclude='*/**/.env' \
             --exclude='mongodb-backup' \
             --exclude='node_modules' \
+            --exclude='*/node_modules' \
+            --exclude='*/**/node_modules' \
             --exclude='client/.next' \
-            --exclude='remise-deploy.tar.gz' \
-            -czf remise-deploy.tar.gz .
+            --exclude='*/.next' \
+            -czf /tmp/remise-deploy.tar.gz . || [ $? -eq 1 ]
 
+          mv /tmp/remise-deploy.tar.gz ./remise-deploy.tar.gz
           ls -lh remise-deploy.tar.gz
 
       - name: Upload deployment archive
