@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles, Loader2, Heart } from "lucide-react";
 import { useWishlist } from "@/app/components-main/WishlistContext";
+import { API_URL } from '@/app/utils/api';
 
 export interface NewArrivalProduct {
     _id?: string;
@@ -26,7 +27,7 @@ interface NewArrivalsSectionProps {
 
 // ── Real-data source (product-service — same one the Category /
 // New Arrivals page uses) ──
-const API_URL = "http://localhost:3003/api";
+// const API_URL = "http://localhost:3003/api";
 
 // Keep this in sync with the standalone /new-arrivals page — a product
 // only counts as a "new arrival" for this many days after creation.

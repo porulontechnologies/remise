@@ -5,8 +5,9 @@ import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Zap, ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useWishlist } from '@/app/components-main/WishlistContext';
+import { API_URL } from '@/app/utils/api';
 
-const API_URL = "http://localhost:3003/api";
+// const API_URL = "http://localhost:3003/api";
 
 export interface BestSellerItem {
   id: string;

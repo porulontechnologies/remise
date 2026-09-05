@@ -27,6 +27,7 @@ import {
   Dumbbell,
   Package,
 } from "lucide-react";
+import { API_URL } from '@/app/utils/api';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   CarFront,
@@ -70,7 +71,7 @@ interface ShopByCategorySectionProps {
 }
 
 // ── Real-data source (product-service — same one the Category page uses) ──
-const API_URL = "http://localhost:3003/api";
+// const API_URL = "http://localhost:3003/api";
 
 // Same default category list used on the Store Dashboard / Category page,
 // so nothing is missing here even if a default has no products yet.
