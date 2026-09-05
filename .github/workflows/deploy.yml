@@ -34,61 +34,32 @@ jobs:
           mv /tmp/remise-deploy.tar.gz ./remise-deploy.tar.gz
           ls -lh remise-deploy.tar.gz
 
-      - name: Deploy to VPS via SSH
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_PORT: ${{ secrets.VPS_PORT }}
-        run: |
-          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$VPS_SSH_KEY" ]; then
-            echo "ERROR: Missing required secrets (VPS_HOST, VPS_USER, or VPS_SSH_KEY)"
-            exit 1
-          fi
+      - name: Upload deployment archive
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          source: "remise-deploy.tar.gz"
+          target: "/root"
 
-          # Sanitize host (remove http://, https://, trailing slashes, whitespace)
-          CLEAN_HOST=$(echo "$VPS_HOST" | sed -e 's|^https://||' -e 's|^http://||' -e 's|/.*$||' | tr -d ' \r\n\t')
-          PORT="${VPS_PORT:-22}"
+      - name: Deploy and restart Docker
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
 
-          mkdir -p ~/.ssh
-          echo "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=45 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
-
-          echo "=== Testing SSH connection to $CLEAN_HOST on port $PORT ==="
-          CONNECTED=0
-          for i in 1 2 3 4 5; do
-            echo "Connection attempt $i of 5..."
-            if ssh $SSH_OPTS -p "$PORT" -i ~/.ssh/id_rsa "${VPS_USER}@${CLEAN_HOST}" "echo 'SSH connection successful!'"; then
-              CONNECTED=1
-              break
-            fi
-            echo "Attempt $i failed (server may be busy building or restarting). Retrying in 10s..."
-            sleep 10
-          done
-
-          if [ "$CONNECTED" -ne 1 ]; then
-            echo "=========================================="
-            echo "ERROR: Unable to connect to $CLEAN_HOST:$PORT"
-            echo "Please check:"
-            echo "1. Hostinger VPS firewall allows Port $PORT from Anywhere (0.0.0.0/0)"
-            echo "2. The VPS_HOST secret in GitHub is set to $CLEAN_HOST"
-            echo "3. The VPS SSH service is active and running"
-            echo "=========================================="
-            exit 1
-          fi
-
-          echo "=== Uploading deployment archive ==="
-          scp $SSH_OPTS -P "$PORT" -i ~/.ssh/id_rsa remise-deploy.tar.gz "${VPS_USER}@${CLEAN_HOST}:/root/remise-deploy.tar.gz"
-
-          echo "=== Deploying and restarting Docker services ==="
-          ssh $SSH_OPTS -p "$PORT" -i ~/.ssh/id_rsa "${VPS_USER}@${CLEAN_HOST}" << 'EOF'
+          script: |
             set -e
+
             PROJECT="/var/www/remise"
             ARCHIVE="/root/remise-deploy.tar.gz"
 
             echo "=== Checking deployment archive ==="
+
             if [ ! -f "$ARCHIVE" ]; then
               echo "ERROR: Deployment archive not found at $ARCHIVE"
               exit 1
@@ -97,22 +68,27 @@ jobs:
             ls -lh "$ARCHIVE"
 
             echo "=== Preparing deployment ==="
+
             mkdir -p "$PROJECT"
 
             echo "=== Extracting new code ==="
+
             tar -xzf "$ARCHIVE" -C "$PROJECT"
+
             rm -f "$ARCHIVE"
 
             cd "$PROJECT"
 
             echo "=== Building and restarting Docker services ==="
+
             docker compose up -d --build
 
             echo "=== Cleaning unused Docker images ==="
+
             docker image prune -f
 
             echo "=== Checking services ==="
+
             docker compose ps
 
             echo "=== Deployment completed successfully ==="
-          EOF

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -27,7 +27,6 @@ import {
   Dumbbell,
   Package,
 } from "lucide-react";
-import { getApiUrl, resolveProductImageUrl } from '@/app/utils/api';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   CarFront,
@@ -70,6 +69,26 @@ interface ShopByCategorySectionProps {
   previewData?: CategoryItem[];
 }
 
+// ── Real-data source (product-service — same one the Category page uses) ──
+const API_URL = "http://localhost:3003/api";
+
+// Same default category list used on the Store Dashboard / Category page,
+// so nothing is missing here even if a default has no products yet.
+const DEFAULT_STORE_CATEGORIES = [
+  "Food & Beverages",
+  "Grocery",
+  "Fashion",
+  "Electronics",
+  "Pharmacy",
+  "Toys",
+  "Home & Living",
+  "Beauty",
+  "Sports",
+  "Other",
+];
+
+// Category-name (lowercase substring) -> icon, so real DB category names get
+// a sensible icon even though the Category model itself stores no icon.
 const CATEGORY_ICON_RULES: [string, string][] = [
   ["grocery", "ShoppingBasket"],
   ["food", "ShoppingBasket"],
@@ -106,11 +125,80 @@ function iconForCategory(name: string): string {
 }
 
 function badgeForCount(count: number): string {
-  if (count === 0) return "Explore";
+  if (count === 0) return "New";
   if (count >= 50) return "Popular";
   if (count >= 15) return "Trending";
-  return "In Stock";
+  return "Shop";
 }
+
+const FALLBACK: CategoryItem[] = [
+  {
+    id: "groceries",
+    title: "Groceries & Fresh",
+    img: "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=400&h=300&auto=format&fit=crop&q=80",
+    color: "from-green-400 to-emerald-600",
+    accent: "text-green-600",
+    icon: "ShoppingBasket",
+    count: 0,
+    description: "Daily essentials & fresh produce",
+    badge: "Daily",
+  },
+  {
+    id: "beauty",
+    title: "Beauty & Cosmetics",
+    img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=300&auto=format&fit=crop&q=80",
+    color: "from-pink-400 to-rose-600",
+    accent: "text-pink-500",
+    icon: "Heart",
+    count: 0,
+    description: "Skincare, makeup & wellness",
+    badge: "Trending",
+  },
+  {
+    id: "toys",
+    title: "Toys & Games",
+    img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&auto=format&fit=crop&q=80",
+    color: "from-yellow-400 to-orange-500",
+    accent: "text-orange-500",
+    icon: "Gamepad2",
+    count: 0,
+    description: "Fun for kids of all ages",
+    badge: "Popular",
+  },
+  {
+    id: "fashion",
+    title: "Fashion & Apparel",
+    img: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&h=300&auto=format&fit=crop&q=80",
+    color: "from-purple-400 to-indigo-600",
+    accent: "text-purple-500",
+    icon: "Shirt",
+    count: 0,
+    description: "Clothing, footwear & accessories",
+    badge: "New",
+  },
+  {
+    id: "home",
+    title: "Home & Living",
+    img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=300&auto=format&fit=crop&q=80",
+    color: "from-teal-400 to-cyan-600",
+    accent: "text-teal-600",
+    icon: "Home",
+    count: 0,
+    description: "Décor, kitchen & household items",
+    badge: "Top Pick",
+  },
+  {
+    id: "electronics",
+    title: "Electronics",
+    img: "https://images.unsplash.com/photo-1526406915894-7bcd65f60845?w=400&h=300&auto=format&fit=crop&q=80",
+    color: "from-blue-400 to-sky-600",
+    accent: "text-blue-500",
+    icon: "Smartphone",
+    count: 0,
+    description: "Gadgets, accessories & more",
+    badge: "Hot",
+  },
+];
 
 const CategoryCard = memo(
   ({
@@ -156,9 +244,8 @@ const CategoryCard = memo(
               <IconComp size={32} className="text-white/70" />
             </div>
           )}
-
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
 
           {/* Badge */}
           <span className="absolute top-3 right-3 bg-[#D4AF37] text-black text-[10px] font-bold px-2 py-0.5 rounded-md shadow">
@@ -186,7 +273,7 @@ const CategoryCard = memo(
             {item.description}
           </p>
           <div className="flex items-center justify-between">
-            <span className={`text-xs font-semibold ${item.accent}`}>
+            <span className={`text-xs font-medium ${item.accent}`}>
               {item.count} items
             </span>
             <span
@@ -213,103 +300,57 @@ const ShopByCategory = memo(
     const [loading, setLoading] = useState(!isPreview);
     const isLight = theme === "light";
 
-    const [retryCount, setRetryCount] = useState(0);
-
     useEffect(() => {
       if (isPreview) {
         setItems(previewData);
         return;
       }
-      let isCancelled = false;
-
-      const loadCategories = async () => {
-        setLoading(true);
+      (async () => {
         try {
-          const originApi = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-            ? `${window.location.origin}/api`
-            : null;
+          // Fetch admin-added categories + full product list (same
+          // limit=10000 fix used on the Category page) in parallel.
+          const [catRes, prodRes] = await Promise.all([
+            fetch(`${API_URL}/categories`, { cache: "no-store" }).then((r) =>
+              r.json(),
+            ),
+            fetch(`${API_URL}/products?limit=10000&ownerRole=store_owner`, {
+              cache: "no-store",
+            }).then((r) => r.json()),
+          ]);
 
-          const endpoints = [
-            originApi,
-            getApiUrl(),
-            "http://localhost:3003/api",
-            "http://localhost:3000/api",
-            "http://localhost:5000/api",
-          ].filter((v, i, a): v is string => Boolean(v) && a.indexOf(v) === i);
+          const apiCategories: { _id: string; name: string }[] =
+            catRes?.success && Array.isArray(catRes.data) ? catRes.data : [];
+          const products: any[] = Array.isArray(prodRes?.data)
+            ? prodRes.data
+            : [];
 
-          let products: any[] = [];
-          let apiCategories: { _id: string; name: string }[] = [];
-
-          for (const baseUrl of endpoints) {
-            try {
-              const [catRes, prodRes] = await Promise.all([
-                fetch(`${baseUrl}/categories`, { cache: "no-store" })
-                  .then((r) => (r.ok ? r.json() : null))
-                  .catch(() => null),
-                fetch(`${baseUrl}/products?limit=10000`, { cache: "no-store" })
-                  .then((r) => (r.ok ? r.json() : null))
-                  .catch(() => null),
-              ]);
-
-              const parsedProds = Array.isArray(prodRes?.data)
-                ? prodRes.data
-                : Array.isArray(prodRes?.products)
-                ? prodRes.products
-                : Array.isArray(prodRes)
-                ? prodRes
-                : [];
-
-              const parsedCats =
-                catRes?.success && Array.isArray(catRes.data)
-                  ? catRes.data
-                  : Array.isArray(catRes)
-                  ? catRes
-                  : [];
-
-              if (parsedProds.length > 0 || parsedCats.length > 0) {
-                products = parsedProds;
-                apiCategories = parsedCats;
-                break;
-              }
-            } catch {
-              // Try next endpoint
-            }
-          }
-
-          if (products.length === 0 && apiCategories.length === 0 && retryCount < 2) {
-            // Auto retry once after a short delay
-            setTimeout(() => {
-              if (!isCancelled) setRetryCount((prev) => prev + 1);
-            }, 1200);
-            return;
-          }
-
+          // Merge admin-added categories with the fixed default list —
+          // same approach as the Category page / Store Dashboard — so a
+          // default with zero products still shows up here.
           const seen = new Set<string>();
           const names: string[] = [];
           const addIfNew = (name: string) => {
             if (!name) return;
-            const key = name.trim().toLowerCase();
+            const key = name.toLowerCase();
             if (seen.has(key)) return;
             seen.add(key);
-            names.push(name.trim());
+            names.push(name);
           };
-
           apiCategories.forEach((c) => addIfNew(c.name));
+          DEFAULT_STORE_CATEGORIES.forEach(addIfNew);
           products.forEach((p) => addIfNew(p.category));
 
           const built: CategoryItem[] = names.map((name, i) => {
             const catProducts = products.filter(
-              (p) => (p.category || "").toLowerCase().trim() === name.toLowerCase().trim(),
+              (p) => (p.category || "").toLowerCase() === name.toLowerCase(),
             );
-            // Use real photo from one of this category's own products from DB
+            // Use a real photo from one of this category's own products.
             const withImage = catProducts.find(
               (p) => (p.images && p.images[0]) || p.imageUrl,
             );
-            const rawImg = withImage
+            const img = withImage
               ? withImage.images?.[0] || withImage.imageUrl
               : "";
-            const img = rawImg ? resolveProductImageUrl(rawImg) : "";
-
             const palette = COLOR_PALETTE[i % COLOR_PALETTE.length];
 
             return {
@@ -325,22 +366,18 @@ const ShopByCategory = memo(
             };
           });
 
-          // Show real database categories with inventory first
+          // Show the categories with the most real inventory first, so the
+          // homepage highlights what's actually stocked; "View All" still
+          // links to the full Category page for everything else.
           const sorted = [...built].sort((a, b) => b.count - a.count);
-          const withProducts = sorted.filter((item) => item.count > 0);
-          if (!isCancelled) {
-            setItems(withProducts.length > 0 ? withProducts.slice(0, 6) : sorted.slice(0, 6));
-          }
+          setItems(sorted.length > 0 ? sorted.slice(0, 6) : FALLBACK);
         } catch {
-          if (!isCancelled) setItems([]);
+          setItems(FALLBACK);
         } finally {
-          if (!isCancelled) setLoading(false);
+          setLoading(false);
         }
-      };
-
-      loadCategories();
-      return () => { isCancelled = true; };
-    }, [isPreview, previewData, retryCount]);
+      })();
+    }, [isPreview, previewData]);
 
     if (loading)
       return (

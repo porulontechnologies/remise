@@ -8,7 +8,8 @@ import { useCart } from "@/app/components-main/CartContext";
 import { useWishlist } from "@/app/components-main/WishlistContext";
 import NavbarHome from "@/app/components-main/NavbarHome";
 import { isAuthenticated, redirectToLogin } from "@/app/utils/authGuard";
-import { API_URL, resolveProductImageUrl } from "@/app/utils/api";
+
+const API_URL = "http://localhost:3003/api";
 
 export default function BestSellersPage() {
   const router = useRouter();
@@ -32,33 +33,12 @@ export default function BestSellersPage() {
   useEffect(() => {
     const fetchBestSellers = async () => {
       try {
-        const endpoints = [
-          API_URL,
-          typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-            ? `${window.location.origin}/api`
-            : null,
-          "http://localhost:3003/api",
-          "http://localhost:3000/api",
-        ].filter((v, i, a): v is string => Boolean(v) && a.indexOf(v) === i);
-
-        let arr: any[] = [];
-        for (const baseUrl of endpoints) {
-          try {
-            const res = await fetch(
-              `${baseUrl}/products?sort=bestselling&limit=10000`,
-              { cache: "no-store" },
-            );
-            if (!res.ok) continue;
-            const data = await res.json();
-            const prods = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
-            if (Array.isArray(prods) && prods.length > 0) {
-              arr = prods;
-              break;
-            }
-          } catch {
-            // try next endpoint
-          }
-        }
+        const res = await fetch(
+          `${API_URL}/products?ownerRole=store_owner&sort=bestselling&limit=10000`,
+          { cache: "no-store" },
+        );
+        const data = await res.json();
+        const arr = Array.isArray(data?.data) ? data.data : [];
         setProducts(arr);
       } catch (err) {
         console.error(err);
@@ -222,11 +202,10 @@ export default function BestSellersPage() {
                 {bestSellingProducts.map((product, index) => {
                   const productId = product._id || product.id;
                   const isWished = isWishlisted(productId);
-                  const displayImg = resolveProductImageUrl(
+                  const displayImg =
                     product.images?.length > 0
                       ? product.images[0]
-                      : product.imageUrl,
-                  );
+                      : product.imageUrl;
                   const discount =
                     product.discountedPrice != null &&
                     product.discountedPrice < product.price

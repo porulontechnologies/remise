@@ -23,8 +23,8 @@ import NavbarHome from "@/app/components-main/NavbarHome";
 import { isAuthenticated, redirectToLogin } from "@/app/utils/authGuard";
 import { AuthContext } from "@/app/context/AuthContext";
 
-import { API_URL, resolveProductImageUrl } from "@/app/utils/api";
 const STORE_OWNER_ROLES = ["store_owner", "whole_saler", "home_business"];
+const API_URL = "http://localhost:3003/api";
 const NEW_ARRIVAL_WINDOW_DAYS = 14;
 
 const FilterSection = ({ title, children, isOpenDefault = true, theme, activeCount = 0 }: any) => {
@@ -168,36 +168,13 @@ function NewArrivalsContent() {
                 const rawToken = typeof window !== "undefined" ? localStorage.getItem("token") : null;
                 const token = rawToken ? rawToken.replace(/['"]+/g, "") : null;
                 const ts = new Date().getTime();
-                const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-                const endpoints = [
-                    API_URL,
-                    typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-                        ? `${window.location.origin}/api`
-                        : null,
-                    "http://localhost:3003/api",
-                    "http://localhost:3000/api",
-                ].filter((v, i, a): v is string => Boolean(v) && a.indexOf(v) === i);
-
-                let arr: any[] = [];
-                for (const baseUrl of endpoints) {
-                    try {
-                        const res = await fetch(`${baseUrl}/products?t=${ts}&limit=10000`, {
-                            headers,
-                            cache: "no-store",
-                        });
-                        if (!res.ok) continue;
-                        const data = await res.json();
-                        const prods = Array.isArray(data) ? data : data.products || data.data || [];
-                        if (Array.isArray(prods) && prods.length > 0) {
-                            arr = prods;
-                            break;
-                        }
-                    } catch {
-                        // try next endpoint
-                    }
-                }
-
+                const res = await fetch(`${API_URL}/products?t=${ts}&ownerRole=store_owner&limit=10000`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    cache: "no-store",
+                });
+                const data = await res.json();
+                const arr = Array.isArray(data) ? data : data.products || data.data || [];
                 setProducts(arr);
                 if (arr.length > 0) {
                     const hi = Math.max(...arr.map((p: any) => p.price || 0));
@@ -493,9 +470,7 @@ function NewArrivalsContent() {
                                     {filteredProducts.map((product, index) => {
                                         const productId = product._id || product.id;
                                         const isWished = isWishlisted(productId);
-                                        const displayImg = resolveProductImageUrl(
-                                            product.images?.length > 0 ? product.images[0] : product.imageUrl
-                                        );
+                                        const displayImg = product.images?.length > 0 ? product.images[0] : product.imageUrl;
                                         const discount = product.originalPrice > product.price
                                             ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
                                             : 0;
