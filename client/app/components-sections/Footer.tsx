@@ -14,6 +14,7 @@ import {
   Shield,
   CreditCard,
   Truck,
+} from "lucide-react";
 import { API_URL } from "../utils/api";
 
 const Footer = memo(({ theme }: { theme: "dark" | "light" }) => {
