@@ -26,6 +26,7 @@ import {
   Pill,
   Dumbbell,
   Package,
+} from "lucide-react";
 import { API_URL, resolveProductImageUrl } from '@/app/utils/api';
 
 const ICON_MAP: Record<string, React.ElementType> = {
