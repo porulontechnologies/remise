@@ -150,12 +150,16 @@ const contentRoutes = [
   '/api/hero', '/api/trending', '/api/studio', '/api/ralleyz',
   '/api/characters', '/api/bestsellers', '/api/shopbyage',
   '/api/shopbycategory', '/api/bentogrid', '/api/reviews',
-  '/api/services', '/api/contact', '/api/blog-lifestyle',
-  '/api/enhanced-testimonials',
+  '/api/services', '/api/contact', '/api/newsletter',
+  '/api/blog-lifestyle', '/api/enhanced-testimonials',
 ];
 contentRoutes.forEach(route => {
   app.use(route, makeProxy(SERVICES.content, route));
 });
+
+app.use('/api/admin/newsletter',
+  makeProxy(SERVICES.content, '/api/newsletter/admin')
+);
 
 // Static uploads — service-specific prefixes must be registered before the
 // generic '/uploads' catch-all below, since Express matches in order.

@@ -1,5 +1,6 @@
 const ContactConfig = require('../models/ContactConfig');
 const ContactMessage = require('../models/ContactMessage');
+const { sendContactFormEmail } = require('../utils/sendEmail');
 
 const getContact = async (req, res) => {
   try {
@@ -12,8 +13,12 @@ const getContact = async (req, res) => {
 const updateContact = async (req, res) => {
   try {
     let config = await ContactConfig.findOne();
-    if (config) { Object.assign(config, req.body); await config.save(); }
-    else config = await ContactConfig.create(req.body);
+    if (config) { 
+      Object.assign(config, req.body); 
+      await config.save(); 
+    } else {
+      config = await ContactConfig.create(req.body);
+    }
     res.json({ success: true, data: config });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -31,11 +36,25 @@ const resetContact = async (req, res) => {
 
 const createMessage = async (req, res) => {
   try {
-    const { name, email, subject, message } = req.body;
-    if (!name || !email || !message) return res.status(400).json({ success: false, message: 'name, email, and message are required' });
-    const msg = await ContactMessage.create({ name, email, subject, message });
+    const { name, email, phone, subject, message } = req.body;
+    if (!name || !email || !message) {
+      return res.status(400).json({ success: false, message: 'Name, email, and message are required fields.' });
+    }
+
+    // 1. Save message to database
+    const msg = await ContactMessage.create({ name, email, phone, subject, message });
+
+    // 2. Dispatch email to porulontechnologies@gmail.com
+    try {
+      await sendContactFormEmail({ name, email, phone, message });
+      console.log(`✅ [Contact Service] Notification email dispatched for inquiry from ${email}`);
+    } catch (emailErr) {
+      console.error('⚠️ [Contact Service] Failed to send email notification:', emailErr.message);
+    }
+
     res.status(201).json({ success: true, message: 'Message sent successfully', data: msg });
   } catch (error) {
+    console.error('❌ [Contact Service] createMessage error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

@@ -91,12 +91,15 @@ contactRouter.put('/', protect, verifyAdmin, contactCtrl.updateContact);
 contactRouter.post('/reset', protect, verifyAdmin, contactCtrl.resetContact);
 contactRouter.get('/messages', protect, verifyAdmin, contactCtrl.getMessages);
 
+const newsletterRouter = require('./newsletterRoutes');
+
 // ── Register all routes on the app ───────────────────────────────────────────
 module.exports = (app) => {
   app.use('/api/hero',                  heroRouter);
   app.use('/api/trending',              trendingRouter);
   app.use('/api/studio',                studioRouter);
   app.use('/api/contact',               contactRouter);
+  app.use('/api/newsletter',            newsletterRouter);
   app.use('/api/ralleyz',               buildSimpleRouter(RalleyzConfig));
   app.use('/api/characters',            buildSimpleRouter(CharacterConfig));
   app.use('/api/bestsellers',           buildSimpleRouter(BestSellerConfig));

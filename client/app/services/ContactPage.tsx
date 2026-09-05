@@ -24,7 +24,7 @@ interface ContactPageProps {
   previewData?: ContactData;
 }
 
-const API_URL = "https://wow-lifebackend.onrender.com/api";
+import { API_URL } from '../utils/api';
 
 export default function ContactPage({ isOpen, onClose, isDarkMode, isPreview = false, previewData }: ContactPageProps) {
   const [mounted, setMounted] = useState(false);
@@ -34,7 +34,7 @@ export default function ContactPage({ isOpen, onClose, isDarkMode, isPreview = f
 
   const [data, setData] = useState<ContactData>({
     title: "Get in Touch", subtitle: "We'd love to hear from you. Contact us for any queries.",
-    email: "contact@wowlifestyle.com", phone: "+91 98765 43210", address: "123 Lifestyle Street, Mumbai, India 400001",
+    email: "porulontechnologies@gmail.com", phone: "+91 90470 099277", address: "Coimbatore, Tamil Nadu, India",
     hoursWeekday: "9:00 AM - 8:00 PM", hoursSaturday: "10:00 AM - 6:00 PM", hoursSunday: "Closed"
   });
 
@@ -311,7 +311,7 @@ export default function ContactPage({ isOpen, onClose, isDarkMode, isPreview = f
                 <label className={`block text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1.5 sm:mb-2 ${isDarkMode ? 'text-red-700' : 'text-red-800'}`}>Phone Number</label>
                 <div className="relative group">
                   <Phone className={`absolute left-3.5 top-3.5 transition-colors ${isDarkMode ? 'text-red-600/50 group-focus-within:text-orange-500' : 'text-red-600/40 group-focus-within:text-red-700'}`} size={18} />
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 98765 43210"
+                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 90470 099277"
                     className={`w-full pl-11 pr-4 py-3 rounded-xl text-sm transition-all border outline-none ${
                       isDarkMode 
                         ? 'bg-neutral-900 border-red-500/20 text-white placeholder:text-neutral-600 focus:bg-black focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50' 

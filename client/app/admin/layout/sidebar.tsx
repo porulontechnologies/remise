@@ -60,6 +60,7 @@ export default function Sidebar() {
     { name: 'Product', icon: '📈', path: '/admin/product' },
     { name: 'Order History', icon: '📦', path: '/admin/order-history' }, // <-- ADDED HERE
     { name: 'User Management', icon: '👥', path: '/admin/users'},
+    { name: 'Newsletter', icon: '📧', path: '/admin/newsletter' },
     { name: 'Dynamic Content', icon: '⚡', path: '/admin/dynamic-content' },
     { name: 'Settings', icon: '⚙️', path: '/admin/settings' },
   ];

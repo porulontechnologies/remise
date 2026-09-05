@@ -14,10 +14,16 @@ import {
   Shield,
   CreditCard,
   Truck,
-} from "lucide-react";
+import { API_URL } from "../utils/api";
 
 const Footer = memo(({ theme }: { theme: "dark" | "light" }) => {
   const [email, setEmail] = useState("");
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{
+    type: "success" | "error" | "duplicate";
+    text: string;
+  } | null>(null);
+  const [hasInputError, setHasInputError] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<"dark" | "light">(theme);
 
   useEffect(() => {
@@ -31,6 +37,82 @@ const Footer = memo(({ theme }: { theme: "dark" | "light" }) => {
   useEffect(() => {
     if (theme !== currentTheme) setCurrentTheme(theme);
   }, [theme]);
+
+  const validateEmail = (val: string) => {
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(val.trim());
+  };
+
+  const handleSubscribe = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isSubscribing) return;
+
+    if (!email.trim()) {
+      setHasInputError(true);
+      setStatusMessage({ type: "error", text: "Please enter your email" });
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setHasInputError(true);
+      setStatusMessage({
+        type: "error",
+        text: "Please enter a valid email address",
+      });
+      return;
+    }
+
+    setHasInputError(false);
+    setStatusMessage(null);
+    setIsSubscribing(true);
+
+    try {
+      const response = await fetch(`${API_URL}/newsletter/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          source: "web_footer",
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data?.success) {
+        if (data.isDuplicate) {
+          setHasInputError(true);
+          setStatusMessage({
+            type: "duplicate",
+            text: "This email is already subscribed",
+          });
+        } else {
+          setHasInputError(false);
+          setStatusMessage({
+            type: "success",
+            text: "Thanks for subscribing! Check your inbox to confirm.",
+          });
+          setEmail("");
+        }
+      } else {
+        const errorText =
+          data?.message || "Something went wrong. Please try again.";
+        setHasInputError(true);
+        setStatusMessage({
+          type: "error",
+          text: errorText,
+        });
+      }
+    } catch (err) {
+      console.error("Newsletter subscribe error:", err);
+      setHasInputError(true);
+      setStatusMessage({
+        type: "error",
+        text: "Something went wrong. Please try again.",
+      });
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
 
   const isLight = currentTheme === "light";
 
@@ -75,21 +157,55 @@ const Footer = memo(({ theme }: { theme: "dark" | "light" }) => {
                 Get exclusive deals, new arrivals & offers in your inbox.
               </p>
             </div>
-            <div className="flex w-full md:w-auto gap-2 max-w-md">
-              <div className="flex-1 flex items-center bg-white/15 border border-white/20 rounded-xl overflow-hidden">
-                <Mail size={16} className="ml-4 text-teal-100 shrink-0" />
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 bg-transparent px-3 py-3 text-sm text-white placeholder-teal-200 outline-none"
-                />
+            <form onSubmit={handleSubscribe} className="flex flex-col w-full md:w-auto gap-1.5 max-w-md">
+              <div className="flex w-full md:w-auto gap-2">
+                <div
+                  className={`flex-1 flex items-center bg-white/15 border rounded-xl overflow-hidden transition-colors ${
+                    hasInputError
+                      ? "border-red-300 ring-1 ring-red-400"
+                      : "border-white/20"
+                  }`}
+                >
+                  <Mail size={16} className="ml-4 text-teal-100 shrink-0" />
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    disabled={isSubscribing}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (hasInputError) {
+                        setHasInputError(false);
+                        setStatusMessage(null);
+                      }
+                    }}
+                    className="flex-1 bg-transparent px-3 py-3 text-sm text-white placeholder-teal-200 outline-none disabled:opacity-60"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSubscribing}
+                  className="px-5 py-3 bg-[#FF0000] hover:bg-[#e00000] active:scale-95 text-white font-bold rounded-xl text-sm transition shrink-0 flex items-center gap-2 disabled:opacity-75 disabled:hover:bg-[#FF0000]"
+                >
+                  <Send size={15} /> {isSubscribing ? "Subscribing..." : "Subscribe"}
+                </button>
               </div>
-              <button className="px-5 py-3 bg-[#FF0000] hover:bg-[#e00000] text-white font-bold rounded-xl text-sm transition shrink-0 flex items-center gap-2">
-                <Send size={15} /> Subscribe
-              </button>
-            </div>
+
+              {statusMessage && (
+                <div
+                  aria-live="polite"
+                  className={`text-xs px-1 font-semibold transition-all ${
+                    statusMessage.type === "success"
+                      ? "text-white bg-teal-800/40 px-3 py-1.5 rounded-lg border border-teal-200/30"
+                      : statusMessage.type === "duplicate"
+                      ? "text-yellow-100 bg-yellow-900/30 px-3 py-1.5 rounded-lg border border-yellow-300/30"
+                      : "text-red-100 bg-red-900/40 px-3 py-1.5 rounded-lg border border-red-300/30"
+                  }`}
+                >
+                  {statusMessage.text}
+                </div>
+              )}
+            </form>
           </div>
         </div>
       </div>

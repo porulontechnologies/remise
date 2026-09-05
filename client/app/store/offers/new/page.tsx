@@ -374,6 +374,7 @@ function NewOfferPageContent() {
   const [detecting, setDetecting] = useState(false);
   const [error, setError] = useState("");
   const [showScan, setShowScan] = useState(false);
+  const [notifyNewsletter, setNotifyNewsletter] = useState(true);
 
   const [form, setForm] = useState({
     title: "",
@@ -528,6 +529,7 @@ function NewOfferPageContent() {
       Object.entries(form).forEach(([k, v]) => {
         fd.append(k, v);
       });
+      fd.append("notifyNewsletter", notifyNewsletter ? "true" : "false");
       if (targetCustomerId) {
         fd.append("targetCustomerId", targetCustomerId);
         fd.append("targetCustomerName", targetCustomerName || "");
@@ -912,11 +914,23 @@ function NewOfferPageContent() {
           </div>
 
           {/* ── Submit ───────────────────────────────────────────────────── */}
-          <div className="lg:col-span-12 flex justify-end">
+          <div className="lg:col-span-12 flex flex-col sm:flex-row items-center justify-between gap-4 bg-teal-50/70 border border-teal-200/80 p-4 rounded-2xl">
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={notifyNewsletter}
+                onChange={(e) => setNotifyNewsletter(e.target.checked)}
+                className="w-4 h-4 accent-teal-600 rounded cursor-pointer"
+              />
+              <span className="text-sm font-semibold text-slate-800">
+                📧 Notify Newsletter Subscribers <span className="text-xs text-slate-500 font-normal hidden sm:inline">(Broadcast this offer via email)</span>
+              </span>
+            </label>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full lg:w-auto px-10 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3.5 rounded-xl disabled:opacity-50 transition text-base shadow-sm flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition text-sm shadow-sm flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -924,7 +938,7 @@ function NewOfferPageContent() {
                   Publishing...
                 </>
               ) : (
-                <>🚀 Publish Offer & Notify Nearby Users</>
+                <>🚀 Publish Offer</>
               )}
             </button>
           </div>

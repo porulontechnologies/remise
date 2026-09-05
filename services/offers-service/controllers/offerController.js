@@ -6,6 +6,7 @@ const { isStoreOwnedBy } = require('../utils/verifyStoreOwner');
 
 const NOTIFICATION_SERVICE = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3009';
 const STORE_SERVICE        = process.env.STORE_SERVICE_URL        || 'http://localhost:3007';
+const CONTENT_SERVICE      = process.env.CONTENT_SERVICE_URL      || 'http://localhost:3006';
 
 // ─── POST /api/offers — Create a new offer ───────────────────────────────────
 const createOffer = async (req, res) => {
@@ -103,6 +104,13 @@ const createOffer = async (req, res) => {
         notificationRadius: NOTIFICATION_RADIUS_KM
       }).catch(err => console.error('[Offers] Notification dispatch failed:', err.message));
     }
+
+    // Optional: Notify all active newsletter subscribers
+    if (req.body.notifyNewsletter === 'true' || req.body.notifyNewsletter === true) {
+      axios.post(`${CONTENT_SERVICE}/api/newsletter/admin/notify-offer`, { offer })
+        .catch(err => console.error('[Offers] Newsletter notification dispatch failed:', err.message));
+    }
+
     res.status(201).json({ success: true, message: 'Offer published!', data: offer });
   } catch (err) {
     console.error('createOffer error:', err);

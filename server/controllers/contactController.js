@@ -1,5 +1,6 @@
 const ContactConfig = require('../models/ContactConfig');
 const ContactMessage = require('../models/ContactMessage');
+const { sendContactFormEmail } = require('../utils/sendEmail');
 
 // --- CONFIGURATION LOGIC ---
 
@@ -62,6 +63,14 @@ const createMessage = async (req, res) => {
       phone,
       message
     });
+
+    // Send email notification to porulontechnologies@gmail.com
+    try {
+      await sendContactFormEmail({ name, email, phone, message });
+      console.log(`✅ [Server] Notification email dispatched for inquiry from ${email}`);
+    } catch (emailErr) {
+      console.error('⚠️ [Server] Failed to send email notification:', emailErr.message);
+    }
 
     res.status(201).json({ success: true, message: 'Message sent successfully!', data: newMessage });
   } catch (error) {

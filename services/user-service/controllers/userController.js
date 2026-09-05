@@ -144,6 +144,12 @@ const getAdminDashboardStats = async (req, res) => {
     try {
       const prodRes = await axios.get(`${PRODUCT_SERVICE_URL}/api/products?limit=1`);
       if (prodRes.data?.success) {
+        totalProducts = prodRes.data.total || 0;
+      }
+    } catch (err) {
+      console.error('Could not fetch product count from product-service:', err.message);
+    }
+
     // Fetch tokens count from auth-service
     let tokensUsed = 0;
     try {

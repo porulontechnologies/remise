@@ -13,7 +13,8 @@
     "express": "^4.18.2",
     "mongoose": "^7.8.9",
     "morgan": "^1.10.0",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "resend": "^6.26.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

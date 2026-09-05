@@ -21,6 +21,10 @@ ios/build/
 dist/
 build/
 
+# Scratch & Temporary
+scratch/
+**/scratch/
+
 # Upload folders
 uploads/
 **/uploads/
