@@ -70,49 +70,6 @@ interface ShopByCategorySectionProps {
   previewData?: CategoryItem[];
 }
 
-const DEFAULT_STORE_CATEGORIES = [
-  "Food & Beverages",
-  "Grocery",
-  "Fashion",
-  "Electronics",
-  "Pharmacy",
-  "Toys",
-  "Home & Living",
-  "Beauty",
-  "Sports",
-  "Other",
-];
-
-const CATEGORY_DEFAULT_IMAGES: Record<string, string> = {
-  "food & beverages": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
-  "grocery": "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80",
-  "groceries": "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80",
-  "fashion": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=600&auto=format&fit=crop&q=80",
-  "electronics": "https://images.unsplash.com/photo-1526406915894-7bcd65f60845?w=600&auto=format&fit=crop&q=80",
-  "pharmacy": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80",
-  "toys": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&auto=format&fit=crop&q=80",
-  "home & living": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80",
-  "household items": "https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=600&auto=format&fit=crop&q=80",
-  "beauty": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600&auto=format&fit=crop&q=80",
-  "sports": "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=600&auto=format&fit=crop&q=80",
-  "fruits": "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&auto=format&fit=crop&q=80",
-  "vegetables": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80",
-  "flowers": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80",
-  "hardware": "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=600&auto=format&fit=crop&q=80",
-  "vegetables & fruits": "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=600&auto=format&fit=crop&q=80",
-};
-
-export function getDefaultImageForCategory(name: string): string {
-  if (!name) return "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80";
-  const lower = name.toLowerCase().trim();
-  for (const [key, url] of Object.entries(CATEGORY_DEFAULT_IMAGES)) {
-    if (lower === key || lower.includes(key) || key.includes(lower)) return url;
-  }
-  return "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80";
-}
-
-
-
 const CATEGORY_ICON_RULES: [string, string][] = [
   ["grocery", "ShoppingBasket"],
   ["food", "ShoppingBasket"],
@@ -155,75 +112,6 @@ function badgeForCount(count: number): string {
   return "In Stock";
 }
 
-const FALLBACK: CategoryItem[] = [
-  {
-    id: "Electronics",
-    title: "Electronics",
-    img: "https://images.unsplash.com/photo-1526406915894-7bcd65f60845?w=600&auto=format&fit=crop&q=80",
-    color: "from-blue-400 to-sky-600",
-    accent: "text-blue-500",
-    icon: "Smartphone",
-    count: 67,
-    description: "67 products available",
-    badge: "Popular",
-  },
-  {
-    id: "Household Items",
-    title: "Household Items",
-    img: "https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=600&auto=format&fit=crop&q=80",
-    color: "from-teal-400 to-cyan-600",
-    accent: "text-teal-600",
-    icon: "Home",
-    count: 64,
-    description: "64 products available",
-    badge: "Popular",
-  },
-  {
-    id: "Beauty",
-    title: "Beauty & Cosmetics",
-    img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600&auto=format&fit=crop&q=80",
-    color: "from-pink-400 to-rose-600",
-    accent: "text-pink-500",
-    icon: "Heart",
-    count: 62,
-    description: "62 products available",
-    badge: "Popular",
-  },
-  {
-    id: "Grocery",
-    title: "Grocery",
-    img: "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80",
-    color: "from-green-400 to-emerald-600",
-    accent: "text-green-600",
-    icon: "ShoppingBasket",
-    count: 61,
-    description: "61 products available",
-    badge: "Popular",
-  },
-  {
-    id: "Toys",
-    title: "Toys & Games",
-    img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&auto=format&fit=crop&q=80",
-    color: "from-yellow-400 to-orange-500",
-    accent: "text-orange-500",
-    icon: "Gamepad2",
-    count: 30,
-    description: "30 products available",
-    badge: "Trending",
-  },
-  {
-    id: "Flowers",
-    title: "Flowers",
-    img: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80",
-    color: "from-fuchsia-400 to-purple-600",
-    accent: "text-fuchsia-600",
-    icon: "Flower2",
-    count: 30,
-    description: "30 products available",
-    badge: "Trending",
-  },
-];
-
 const CategoryCard = memo(
   ({
     item,
@@ -237,8 +125,6 @@ const CategoryCard = memo(
     const router = useRouter();
     const isLight = theme === "light";
     const IconComp = ICON_MAP[item.icon] || Sparkles;
-    const defaultImg = getDefaultImageForCategory(item.title);
-    const displayImg = item.img || defaultImg;
 
     return (
       <motion.div
@@ -254,17 +140,22 @@ const CategoryCard = memo(
         <div
           className={`relative aspect-[4/3] overflow-hidden ${isLight ? "bg-[#F5F5F5]" : "bg-gray-800"}`}
         >
-          <img
-            src={displayImg}
-            alt={item.title}
-            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              if (target.src !== defaultImg) {
-                target.src = defaultImg;
-              }
-            }}
-          />
+          {item.img ? (
+            <img
+              src={item.img}
+              alt={item.title}
+              className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          ) : (
+            <div
+              className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${item.color}`}
+            >
+              <IconComp size={32} className="text-white/70" />
+            </div>
+          )}
 
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
@@ -390,22 +281,19 @@ const ShopByCategory = memo(
 
           apiCategories.forEach((c) => addIfNew(c.name));
           products.forEach((p) => addIfNew(p.category));
-          DEFAULT_STORE_CATEGORIES.forEach(addIfNew);
 
           const built: CategoryItem[] = names.map((name, i) => {
             const catProducts = products.filter(
               (p) => (p.category || "").toLowerCase().trim() === name.toLowerCase().trim(),
             );
-            // Use a real photo from one of this category's own products if available.
+            // Use real photo from one of this category's own products from DB
             const withImage = catProducts.find(
               (p) => (p.images && p.images[0]) || p.imageUrl,
             );
             const rawImg = withImage
               ? withImage.images?.[0] || withImage.imageUrl
               : "";
-            const img = rawImg
-              ? resolveProductImageUrl(rawImg)
-              : getDefaultImageForCategory(name);
+            const img = rawImg ? resolveProductImageUrl(rawImg) : "";
 
             const palette = COLOR_PALETTE[i % COLOR_PALETTE.length];
 
@@ -422,12 +310,12 @@ const ShopByCategory = memo(
             };
           });
 
-          // Show categories with the most inventory first
+          // Show real database categories with inventory first
           const sorted = [...built].sort((a, b) => b.count - a.count);
-          const hasRealData = sorted.some((item) => item.count > 0);
-          setItems(hasRealData ? sorted.slice(0, 6) : FALLBACK);
+          const withProducts = sorted.filter((item) => item.count > 0);
+          setItems(withProducts.length > 0 ? withProducts.slice(0, 6) : sorted.slice(0, 6));
         } catch {
-          setItems(FALLBACK);
+          setItems([]);
         } finally {
           setLoading(false);
         }

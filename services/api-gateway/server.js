@@ -8,9 +8,7 @@ const authForward = require('./middleware/authForward');
 
 const axios = require('axios');
 
-const app = express();
-
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 
 // ─── Service URLs ────────────────────────────────────────────────────────────
 const SERVICES = {
@@ -42,7 +40,7 @@ app.use(morgan('dev'));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: 10000, // Allow high throughput for normal browsing
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' },
