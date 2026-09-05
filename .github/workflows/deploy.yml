@@ -34,32 +34,36 @@ jobs:
           mv /tmp/remise-deploy.tar.gz ./remise-deploy.tar.gz
           ls -lh remise-deploy.tar.gz
 
-      - name: Upload deployment archive
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          source: "remise-deploy.tar.gz"
-          target: "/root"
+      - name: Deploy to VPS via SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$VPS_SSH_KEY" ]; then
+            echo "ERROR: Missing required secrets (VPS_HOST, VPS_USER, or VPS_SSH_KEY)"
+            exit 1
+          fi
 
-      - name: Deploy and restart Docker
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
-          script: |
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
+
+          echo "=== Testing SSH connection to $VPS_HOST ==="
+          ssh $SSH_OPTS -i ~/.ssh/id_rsa "${VPS_USER}@${VPS_HOST}" "echo 'SSH connection successful!'"
+
+          echo "=== Uploading deployment archive ==="
+          scp $SSH_OPTS -i ~/.ssh/id_rsa remise-deploy.tar.gz "${VPS_USER}@${VPS_HOST}:/root/remise-deploy.tar.gz"
+
+          echo "=== Deploying and restarting Docker services ==="
+          ssh $SSH_OPTS -i ~/.ssh/id_rsa "${VPS_USER}@${VPS_HOST}" << 'EOF'
             set -e
-
             PROJECT="/var/www/remise"
             ARCHIVE="/root/remise-deploy.tar.gz"
 
             echo "=== Checking deployment archive ==="
-
             if [ ! -f "$ARCHIVE" ]; then
               echo "ERROR: Deployment archive not found at $ARCHIVE"
               exit 1
@@ -68,27 +72,22 @@ jobs:
             ls -lh "$ARCHIVE"
 
             echo "=== Preparing deployment ==="
-
             mkdir -p "$PROJECT"
 
             echo "=== Extracting new code ==="
-
             tar -xzf "$ARCHIVE" -C "$PROJECT"
-
             rm -f "$ARCHIVE"
 
             cd "$PROJECT"
 
             echo "=== Building and restarting Docker services ==="
-
             docker compose up -d --build
 
             echo "=== Cleaning unused Docker images ==="
-
             docker image prune -f
 
             echo "=== Checking services ==="
-
             docker compose ps
 
             echo "=== Deployment completed successfully ==="
+          EOF
