@@ -39,26 +39,51 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
           if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$VPS_SSH_KEY" ]; then
             echo "ERROR: Missing required secrets (VPS_HOST, VPS_USER, or VPS_SSH_KEY)"
             exit 1
           fi
 
+          # Sanitize host (remove http://, https://, trailing slashes, whitespace)
+          CLEAN_HOST=$(echo "$VPS_HOST" | sed -e 's|^https://||' -e 's|^http://||' -e 's|/.*$||' | tr -d ' \r\n\t')
+          PORT="${VPS_PORT:-22}"
+
           mkdir -p ~/.ssh
           echo "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=30 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 
-          echo "=== Testing SSH connection to $VPS_HOST ==="
-          ssh $SSH_OPTS -i ~/.ssh/id_rsa "${VPS_USER}@${VPS_HOST}" "echo 'SSH connection successful!'"
+          echo "=== Testing SSH connection to $CLEAN_HOST on port $PORT ==="
+          CONNECTED=0
+          for i in 1 2 3; do
+            echo "Connection attempt $i of 3..."
+            if ssh $SSH_OPTS -p "$PORT" -i ~/.ssh/id_rsa "${VPS_USER}@${CLEAN_HOST}" "echo 'SSH connection successful!'"; then
+              CONNECTED=1
+              break
+            fi
+            echo "Attempt $i failed, retrying in 5 seconds..."
+            sleep 5
+          done
+
+          if [ "$CONNECTED" -ne 1 ]; then
+            echo "=========================================="
+            echo "ERROR: Unable to connect to $CLEAN_HOST:$PORT"
+            echo "Please check:"
+            echo "1. Hostinger VPS firewall allows Port $PORT from Anywhere (0.0.0.0/0)"
+            echo "2. The VPS_HOST secret in GitHub is set to $CLEAN_HOST"
+            echo "3. The VPS SSH service is active and running"
+            echo "=========================================="
+            exit 1
+          fi
 
           echo "=== Uploading deployment archive ==="
-          scp $SSH_OPTS -i ~/.ssh/id_rsa remise-deploy.tar.gz "${VPS_USER}@${VPS_HOST}:/root/remise-deploy.tar.gz"
+          scp $SSH_OPTS -P "$PORT" -i ~/.ssh/id_rsa remise-deploy.tar.gz "${VPS_USER}@${CLEAN_HOST}:/root/remise-deploy.tar.gz"
 
           echo "=== Deploying and restarting Docker services ==="
-          ssh $SSH_OPTS -i ~/.ssh/id_rsa "${VPS_USER}@${VPS_HOST}" << 'EOF'
+          ssh $SSH_OPTS -p "$PORT" -i ~/.ssh/id_rsa "${VPS_USER}@${CLEAN_HOST}" << 'EOF'
             set -e
             PROJECT="/var/www/remise"
             ARCHIVE="/root/remise-deploy.tar.gz"
