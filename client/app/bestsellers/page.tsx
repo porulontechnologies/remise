@@ -7,6 +7,7 @@ import { ShoppingCart, Heart, Zap, Package, Flame } from "lucide-react";
 import { useCart } from "@/app/components-main/CartContext";
 import { useWishlist } from "@/app/components-main/WishlistContext";
 import NavbarHome from "@/app/components-main/NavbarHome";
+import { isAuthenticated, redirectToLogin } from "@/app/utils/authGuard";
 import { API_URL, resolveProductImageUrl } from "@/app/utils/api";
 
 export default function BestSellersPage() {
