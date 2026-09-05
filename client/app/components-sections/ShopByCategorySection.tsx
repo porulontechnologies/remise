@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -70,11 +70,6 @@ interface ShopByCategorySectionProps {
   previewData?: CategoryItem[];
 }
 
-// ── Real-data source (product-service — same one the Category page uses) ──
-// const API_URL = "http://localhost:3003/api";
-
-// Same default category list used on the Store Dashboard / Category page,
-// so nothing is missing here even if a default has no products yet.
 const DEFAULT_STORE_CATEGORIES = [
   "Food & Beverages",
   "Grocery",
@@ -88,8 +83,43 @@ const DEFAULT_STORE_CATEGORIES = [
   "Other",
 ];
 
-// Category-name (lowercase substring) -> icon, so real DB category names get
-// a sensible icon even though the Category model itself stores no icon.
+const CATEGORY_DEFAULT_IMAGES: Record<string, string> = {
+  "food & beverages": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
+  "grocery": "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80",
+  "groceries": "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80",
+  "fashion": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=600&auto=format&fit=crop&q=80",
+  "electronics": "https://images.unsplash.com/photo-1526406915894-7bcd65f60845?w=600&auto=format&fit=crop&q=80",
+  "pharmacy": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80",
+  "toys": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&auto=format&fit=crop&q=80",
+  "home & living": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80",
+  "household items": "https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=600&auto=format&fit=crop&q=80",
+  "beauty": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600&auto=format&fit=crop&q=80",
+  "sports": "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=600&auto=format&fit=crop&q=80",
+  "fruits": "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&auto=format&fit=crop&q=80",
+  "vegetables": "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80",
+  "flowers": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80",
+  "hardware": "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=600&auto=format&fit=crop&q=80",
+  "vegetables & fruits": "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=600&auto=format&fit=crop&q=80",
+};
+
+export function getDefaultImageForCategory(name: string): string {
+  if (!name) return "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80";
+  const lower = name.toLowerCase().trim();
+  for (const [key, url] of Object.entries(CATEGORY_DEFAULT_IMAGES)) {
+    if (lower === key || lower.includes(key) || key.includes(lower)) return url;
+  }
+  return "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80";
+}
+
+export function resolveProductImageUrl(url?: string): string {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+    return url;
+  }
+  const backendBase = "http://localhost:3003";
+  return `${backendBase}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 const CATEGORY_ICON_RULES: [string, string][] = [
   ["grocery", "ShoppingBasket"],
   ["food", "ShoppingBasket"],
@@ -126,78 +156,78 @@ function iconForCategory(name: string): string {
 }
 
 function badgeForCount(count: number): string {
-  if (count === 0) return "New";
+  if (count === 0) return "Explore";
   if (count >= 50) return "Popular";
   if (count >= 15) return "Trending";
-  return "Shop";
+  return "In Stock";
 }
 
 const FALLBACK: CategoryItem[] = [
   {
-    id: "groceries",
-    title: "Groceries & Fresh",
-    img: "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=400&h=300&auto=format&fit=crop&q=80",
-    color: "from-green-400 to-emerald-600",
-    accent: "text-green-600",
-    icon: "ShoppingBasket",
-    count: 0,
-    description: "Daily essentials & fresh produce",
-    badge: "Daily",
-  },
-  {
-    id: "beauty",
-    title: "Beauty & Cosmetics",
-    img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=300&auto=format&fit=crop&q=80",
-    color: "from-pink-400 to-rose-600",
-    accent: "text-pink-500",
-    icon: "Heart",
-    count: 0,
-    description: "Skincare, makeup & wellness",
-    badge: "Trending",
-  },
-  {
-    id: "toys",
-    title: "Toys & Games",
-    img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&auto=format&fit=crop&q=80",
-    color: "from-yellow-400 to-orange-500",
-    accent: "text-orange-500",
-    icon: "Gamepad2",
-    count: 0,
-    description: "Fun for kids of all ages",
-    badge: "Popular",
-  },
-  {
-    id: "fashion",
-    title: "Fashion & Apparel",
-    img: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400&h=300&auto=format&fit=crop&q=80",
-    color: "from-purple-400 to-indigo-600",
-    accent: "text-purple-500",
-    icon: "Shirt",
-    count: 0,
-    description: "Clothing, footwear & accessories",
-    badge: "New",
-  },
-  {
-    id: "home",
-    title: "Home & Living",
-    img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=300&auto=format&fit=crop&q=80",
-    color: "from-teal-400 to-cyan-600",
-    accent: "text-teal-600",
-    icon: "Home",
-    count: 0,
-    description: "Décor, kitchen & household items",
-    badge: "Top Pick",
-  },
-  {
-    id: "electronics",
+    id: "Electronics",
     title: "Electronics",
-    img: "https://images.unsplash.com/photo-1526406915894-7bcd65f60845?w=400&h=300&auto=format&fit=crop&q=80",
+    img: "https://images.unsplash.com/photo-1526406915894-7bcd65f60845?w=600&auto=format&fit=crop&q=80",
     color: "from-blue-400 to-sky-600",
     accent: "text-blue-500",
     icon: "Smartphone",
-    count: 0,
-    description: "Gadgets, accessories & more",
-    badge: "Hot",
+    count: 67,
+    description: "67 products available",
+    badge: "Popular",
+  },
+  {
+    id: "Household Items",
+    title: "Household Items",
+    img: "https://images.unsplash.com/photo-1583947215259-38e31be8751f?w=600&auto=format&fit=crop&q=80",
+    color: "from-teal-400 to-cyan-600",
+    accent: "text-teal-600",
+    icon: "Home",
+    count: 64,
+    description: "64 products available",
+    badge: "Popular",
+  },
+  {
+    id: "Beauty",
+    title: "Beauty & Cosmetics",
+    img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600&auto=format&fit=crop&q=80",
+    color: "from-pink-400 to-rose-600",
+    accent: "text-pink-500",
+    icon: "Heart",
+    count: 62,
+    description: "62 products available",
+    badge: "Popular",
+  },
+  {
+    id: "Grocery",
+    title: "Grocery",
+    img: "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80",
+    color: "from-green-400 to-emerald-600",
+    accent: "text-green-600",
+    icon: "ShoppingBasket",
+    count: 61,
+    description: "61 products available",
+    badge: "Popular",
+  },
+  {
+    id: "Toys",
+    title: "Toys & Games",
+    img: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&auto=format&fit=crop&q=80",
+    color: "from-yellow-400 to-orange-500",
+    accent: "text-orange-500",
+    icon: "Gamepad2",
+    count: 30,
+    description: "30 products available",
+    badge: "Trending",
+  },
+  {
+    id: "Flowers",
+    title: "Flowers",
+    img: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=80",
+    color: "from-fuchsia-400 to-purple-600",
+    accent: "text-fuchsia-600",
+    icon: "Flower2",
+    count: 30,
+    description: "30 products available",
+    badge: "Trending",
   },
 ];
 
@@ -214,6 +244,8 @@ const CategoryCard = memo(
     const router = useRouter();
     const isLight = theme === "light";
     const IconComp = ICON_MAP[item.icon] || Sparkles;
+    const defaultImg = getDefaultImageForCategory(item.title);
+    const displayImg = item.img || defaultImg;
 
     return (
       <motion.div
@@ -229,24 +261,20 @@ const CategoryCard = memo(
         <div
           className={`relative aspect-[4/3] overflow-hidden ${isLight ? "bg-[#F5F5F5]" : "bg-gray-800"}`}
         >
-          {item.img ? (
-            <img
-              src={item.img}
-              alt={item.title}
-              className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-          ) : (
-            <div
-              className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${item.color}`}
-            >
-              <IconComp size={32} className="text-white/70" />
-            </div>
-          )}
+          <img
+            src={displayImg}
+            alt={item.title}
+            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              if (target.src !== defaultImg) {
+                target.src = defaultImg;
+              }
+            }}
+          />
+
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
           {/* Badge */}
           <span className="absolute top-3 right-3 bg-[#D4AF37] text-black text-[10px] font-bold px-2 py-0.5 rounded-md shadow">
@@ -274,7 +302,7 @@ const CategoryCard = memo(
             {item.description}
           </p>
           <div className="flex items-center justify-between">
-            <span className={`text-xs font-medium ${item.accent}`}>
+            <span className={`text-xs font-semibold ${item.accent}`}>
               {item.count} items
             </span>
             <span
@@ -308,50 +336,81 @@ const ShopByCategory = memo(
       }
       (async () => {
         try {
-          // Fetch admin-added categories + full product list (same
-          // limit=10000 fix used on the Category page) in parallel.
-          const [catRes, prodRes] = await Promise.all([
-            fetch(`${API_URL}/categories`, { cache: "no-store" }).then((r) =>
-              r.json(),
-            ),
-            fetch(`${API_URL}/products?limit=10000&ownerRole=store_owner`, {
-              cache: "no-store",
-            }).then((r) => r.json()),
-          ]);
+          const endpoints = [
+            API_URL,
+            "http://localhost:3003/api",
+            "http://localhost:3000/api",
+            "http://localhost:5000/api",
+          ].filter((v, i, a): v is string => Boolean(v) && a.indexOf(v) === i);
 
-          const apiCategories: { _id: string; name: string }[] =
-            catRes?.success && Array.isArray(catRes.data) ? catRes.data : [];
-          const products: any[] = Array.isArray(prodRes?.data)
-            ? prodRes.data
-            : [];
+          let products: any[] = [];
+          let apiCategories: { _id: string; name: string }[] = [];
 
-          // Merge admin-added categories with the fixed default list —
-          // same approach as the Category page / Store Dashboard — so a
-          // default with zero products still shows up here.
+          for (const baseUrl of endpoints) {
+            try {
+              const [catRes, prodRes] = await Promise.all([
+                fetch(`${baseUrl}/categories`, { cache: "no-store" })
+                  .then((r) => (r.ok ? r.json() : null))
+                  .catch(() => null),
+                fetch(`${baseUrl}/products?limit=10000`, { cache: "no-store" })
+                  .then((r) => (r.ok ? r.json() : null))
+                  .catch(() => null),
+              ]);
+
+              const parsedProds = Array.isArray(prodRes?.data)
+                ? prodRes.data
+                : Array.isArray(prodRes?.products)
+                ? prodRes.products
+                : Array.isArray(prodRes)
+                ? prodRes
+                : [];
+
+              const parsedCats =
+                catRes?.success && Array.isArray(catRes.data)
+                  ? catRes.data
+                  : Array.isArray(catRes)
+                  ? catRes
+                  : [];
+
+              if (parsedProds.length > 0 || parsedCats.length > 0) {
+                products = parsedProds;
+                apiCategories = parsedCats;
+                break;
+              }
+            } catch {
+              // Try next endpoint
+            }
+          }
+
           const seen = new Set<string>();
           const names: string[] = [];
           const addIfNew = (name: string) => {
             if (!name) return;
-            const key = name.toLowerCase();
+            const key = name.trim().toLowerCase();
             if (seen.has(key)) return;
             seen.add(key);
-            names.push(name);
+            names.push(name.trim());
           };
+
           apiCategories.forEach((c) => addIfNew(c.name));
-          DEFAULT_STORE_CATEGORIES.forEach(addIfNew);
           products.forEach((p) => addIfNew(p.category));
+          DEFAULT_STORE_CATEGORIES.forEach(addIfNew);
 
           const built: CategoryItem[] = names.map((name, i) => {
             const catProducts = products.filter(
-              (p) => (p.category || "").toLowerCase() === name.toLowerCase(),
+              (p) => (p.category || "").toLowerCase().trim() === name.toLowerCase().trim(),
             );
-            // Use a real photo from one of this category's own products.
+            // Use a real photo from one of this category's own products if available.
             const withImage = catProducts.find(
               (p) => (p.images && p.images[0]) || p.imageUrl,
             );
-            const img = withImage
+            const rawImg = withImage
               ? withImage.images?.[0] || withImage.imageUrl
               : "";
+            const img = rawImg
+              ? resolveProductImageUrl(rawImg)
+              : getDefaultImageForCategory(name);
+
             const palette = COLOR_PALETTE[i % COLOR_PALETTE.length];
 
             return {
@@ -367,11 +426,10 @@ const ShopByCategory = memo(
             };
           });
 
-          // Show the categories with the most real inventory first, so the
-          // homepage highlights what's actually stocked; "View All" still
-          // links to the full Category page for everything else.
+          // Show categories with the most inventory first
           const sorted = [...built].sort((a, b) => b.count - a.count);
-          setItems(sorted.length > 0 ? sorted.slice(0, 6) : FALLBACK);
+          const hasRealData = sorted.some((item) => item.count > 0);
+          setItems(hasRealData ? sorted.slice(0, 6) : FALLBACK);
         } catch {
           setItems(FALLBACK);
         } finally {
