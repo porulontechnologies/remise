@@ -289,22 +289,25 @@ const CategoryCard = memo(
 );
 CategoryCard.displayName = "CategoryCard";
 
+const DEFAULT_CATEGORY_PREVIEW: CategoryItem[] = [];
+
 const ShopByCategory = memo(
   ({
     theme = "dark",
     isPreview = false,
-    previewData = [],
+    previewData = DEFAULT_CATEGORY_PREVIEW,
   }: ShopByCategorySectionProps) => {
     const router = useRouter();
-    const [items, setItems] = useState<CategoryItem[]>(previewData);
+    const [items, setItems] = useState<CategoryItem[]>(previewData || DEFAULT_CATEGORY_PREVIEW);
     const [loading, setLoading] = useState(!isPreview);
     const isLight = theme === "light";
 
     useEffect(() => {
       if (isPreview) {
-        setItems(previewData);
+        setItems(previewData || DEFAULT_CATEGORY_PREVIEW);
         return;
       }
+      let isMounted = true;
       (async () => {
         try {
           // Fetch admin-added categories + full product list (same
@@ -370,14 +373,20 @@ const ShopByCategory = memo(
           // homepage highlights what's actually stocked; "View All" still
           // links to the full Category page for everything else.
           const sorted = [...built].sort((a, b) => b.count - a.count);
-          setItems(sorted.length > 0 ? sorted.slice(0, 6) : FALLBACK);
+          if (isMounted) {
+            setItems(sorted.length > 0 ? sorted.slice(0, 6) : FALLBACK);
+          }
         } catch {
-          setItems(FALLBACK);
+          if (isMounted) setItems(FALLBACK);
         } finally {
-          setLoading(false);
+          if (isMounted) setLoading(false);
         }
       })();
-    }, [isPreview, previewData]);
+
+      return () => {
+        isMounted = false;
+      };
+    }, [isPreview]);
 
     if (loading)
       return (

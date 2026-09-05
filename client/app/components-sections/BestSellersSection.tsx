@@ -7,8 +7,6 @@ import { useRouter } from 'next/navigation';
 import { useWishlist } from '@/app/components-main/WishlistContext';
 import { API_URL } from '@/app/utils/api';
 
-// const API_URL = "http://localhost:3003/api";
-
 export interface BestSellerItem {
   id: string;
   name: string;
@@ -155,7 +153,7 @@ const BestSellers = memo(({ theme = 'dark', isPreview = false, previewData = [] 
         setLoading(false);
       }
     })();
-  }, [isPreview, previewData]);
+  }, [isPreview]);
 
   if (loading) return (
     <div className={`py-20 flex justify-center ${isLight ? 'bg-white' : 'bg-gray-950'}`}>
