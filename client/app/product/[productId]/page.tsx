@@ -23,6 +23,7 @@ import NavbarHome from "@/app/components-main/NavbarHome";
 import { isAuthenticated, redirectToLogin } from "@/app/utils/authGuard";
 import { AuthContext } from "@/app/context/AuthContext";
 import { normalizeSpecifications } from "@/app/utils/categoryAttributes";
+import { API_URL, resolveProductImageUrl } from "@/app/utils/api";
 
 // Roles that see store-owner pricing instead of the direct-customer price
 const STORE_OWNER_ROLES = ["store_owner", "whole_saler", "home_business"];
@@ -67,15 +68,20 @@ export default function ProductDetailPage() {
         const timestamp = new Date().getTime();
         const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-        const baseGateway = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+        const originBase = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+          ? `${window.location.origin}/api`
+          : null;
+
         const candidateUrls = [
+          originBase ? `${originBase}/products/${productId}` : null,
+          originBase ? `${originBase}/products?t=${timestamp}&limit=10000` : null,
+          `${API_URL}/products/${productId}`,
+          `${API_URL}/products?t=${timestamp}&limit=10000`,
           `http://localhost:3003/api/products/${productId}`,
           `http://localhost:3003/api/products?t=${timestamp}&limit=10000`,
-          `${baseGateway}/api/products/${productId}`,
-          `${baseGateway}/api/products?t=${timestamp}&limit=10000`,
-          `${baseGateway}/api/admin/products?t=${timestamp}`,
-          `https://wow-lifebackend.onrender.com/api/admin/products?t=${timestamp}`,
-        ];
+          `http://localhost:3000/api/products/${productId}`,
+          `http://localhost:3000/api/products?t=${timestamp}&limit=10000`,
+        ].filter((v, i, a): v is string => Boolean(v) && a.indexOf(v) === i);
 
         let foundProduct: any = null;
         let allItems: any[] = [];
@@ -137,7 +143,7 @@ export default function ProductDetailPage() {
             foundProduct.images && foundProduct.images.length > 0
               ? foundProduct.images[0]
               : foundProduct.imageUrl;
-          setActiveImage(defaultImage || "");
+          setActiveImage(resolveProductImageUrl(defaultImage) || "");
         }
       } catch (error) {
         console.error("Error fetching product:", error);

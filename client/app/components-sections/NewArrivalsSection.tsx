@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles, Loader2, Heart } from "lucide-react";
 import { useWishlist } from "@/app/components-main/WishlistContext";
-import { API_URL } from '@/app/utils/api';
+import { API_URL, resolveProductImageUrl } from '@/app/utils/api';
 
 export interface NewArrivalProduct {
     _id?: string;
@@ -52,8 +52,9 @@ const NewArrivalCard = memo(
 
         const productId = item._id || item.id || "";
         const isWished = isWishlisted(productId);
-        const displayImg =
-            item.images && item.images.length > 0 ? item.images[0] : item.imageUrl;
+        const displayImg = resolveProductImageUrl(
+            item.images && item.images.length > 0 ? item.images[0] : item.imageUrl,
+        );
         const effectivePrice = item.discountedPrice ?? item.price;
         const discount =
             item.originalPrice && item.originalPrice > effectivePrice
@@ -172,14 +173,32 @@ const NewArrivalsSection = memo(({ theme = "dark" }: NewArrivalsSectionProps) =>
     useEffect(() => {
         (async () => {
             try {
-                const res = await fetch(
-                    `${API_URL}/products?limit=10000&ownerRole=store_owner`,
-                    { cache: "no-store" },
-                );
-                const data = await res.json();
-                const products: any[] = Array.isArray(data)
-                    ? data
-                    : data.products || data.data || [];
+                const endpoints = [
+                    API_URL,
+                    typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+                        ? `${window.location.origin}/api`
+                        : null,
+                    "http://localhost:3003/api",
+                    "http://localhost:3000/api",
+                ].filter((v, i, a): v is string => Boolean(v) && a.indexOf(v) === i);
+
+                let products: any[] = [];
+                for (const baseUrl of endpoints) {
+                    try {
+                        const res = await fetch(`${baseUrl}/products?limit=10000`, { cache: "no-store" });
+                        if (!res.ok) continue;
+                        const data = await res.json();
+                        const prods = Array.isArray(data)
+                            ? data
+                            : data.products || data.data || [];
+                        if (Array.isArray(prods) && prods.length > 0) {
+                            products = prods;
+                            break;
+                        }
+                    } catch {
+                        // try next endpoint
+                    }
+                }
 
                 const cutoff =
                     Date.now() - NEW_ARRIVAL_WINDOW_DAYS * 24 * 60 * 60 * 1000;

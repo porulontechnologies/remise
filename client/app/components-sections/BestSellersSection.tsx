@@ -5,9 +5,7 @@ import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Zap, ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useWishlist } from '@/app/components-main/WishlistContext';
-import { API_URL } from '@/app/utils/api';
-
-// const API_URL = "http://localhost:3003/api";
+import { API_URL, resolveProductImageUrl } from '@/app/utils/api';
 
 export interface BestSellerItem {
   id: string;
@@ -33,7 +31,8 @@ interface BestSellersSectionProps {
 
 // Maps a raw product document from the product-service into what this card needs.
 function mapProduct(p: any): BestSellerItem {
-  const img = p.images?.length > 0 ? p.images[0] : p.imageUrl;
+  const rawImg = p.images?.length > 0 ? p.images[0] : p.imageUrl;
+  const img = resolveProductImageUrl(rawImg);
   const hasDiscount =
     p.discountedPrice != null && p.discountedPrice < p.price;
   return {
@@ -142,12 +141,33 @@ const BestSellers = memo(({ theme = 'dark', isPreview = false, previewData = [] 
     if (isPreview) { setItems(previewData); return; }
     (async () => {
       try {
-        const res = await fetch(
-          `${API_URL}/products?ownerRole=store_owner&sort=bestselling&limit=5`,
-          { cache: 'no-store' },
-        );
-        const r = await res.json();
-        const raw = Array.isArray(r?.data) ? r.data : [];
+        const endpoints = [
+          API_URL,
+          typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+            ? `${window.location.origin}/api`
+            : null,
+          "http://localhost:3003/api",
+          "http://localhost:3000/api",
+        ].filter((v, i, a): v is string => Boolean(v) && a.indexOf(v) === i);
+
+        let raw: any[] = [];
+        for (const baseUrl of endpoints) {
+          try {
+            const res = await fetch(
+              `${baseUrl}/products?sort=bestselling&limit=5`,
+              { cache: 'no-store' },
+            );
+            if (!res.ok) continue;
+            const r = await res.json();
+            const arr = Array.isArray(r?.data) ? r.data : (Array.isArray(r) ? r : []);
+            if (Array.isArray(arr) && arr.length > 0) {
+              raw = arr;
+              break;
+            }
+          } catch {
+            // try next endpoint
+          }
+        }
         setItems(raw.map(mapProduct));
       } catch {
         setItems([]);

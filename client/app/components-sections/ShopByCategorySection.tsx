@@ -26,8 +26,7 @@ import {
   Pill,
   Dumbbell,
   Package,
-} from "lucide-react";
-import { API_URL } from '@/app/utils/api';
+import { API_URL, resolveProductImageUrl } from '@/app/utils/api';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   CarFront,
@@ -111,14 +110,7 @@ export function getDefaultImageForCategory(name: string): string {
   return "https://images.unsplash.com/photo-1542838132-29423eda0ea4?w=600&auto=format&fit=crop&q=80";
 }
 
-export function resolveProductImageUrl(url?: string): string {
-  if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
-    return url;
-  }
-  const backendBase = "http://localhost:3003";
-  return `${backendBase}${url.startsWith("/") ? "" : "/"}${url}`;
-}
+
 
 const CATEGORY_ICON_RULES: [string, string][] = [
   ["grocery", "ShoppingBasket"],
@@ -338,6 +330,9 @@ const ShopByCategory = memo(
         try {
           const endpoints = [
             API_URL,
+            typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+              ? `${window.location.origin}/api`
+              : null,
             "http://localhost:3003/api",
             "http://localhost:3000/api",
             "http://localhost:5000/api",
