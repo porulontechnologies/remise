@@ -38,25 +38,28 @@ const ReviewSection = memo(({ theme = 'dark', isPreview = false, previewData }: 
       setData(previewData);
       return;
     }
-
+    let isMounted = true;
     const fetchData = async () => {
       try {
         const API_URL = "https://wow-lifebackend.onrender.com/api";
         const response = await fetch(`${API_URL}/reviews`);
         const result = await response.json();
         
-        if (result.success && result.data) {
+        if (isMounted && result.success && result.data) {
           setData(result.data);
         }
       } catch (error) {
         console.error('Error fetching reviews:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [isPreview, previewData]);
+    return () => {
+      isMounted = false;
+    };
+  }, [isPreview, isPreview ? previewData : null]);
 
   if (isLoading) {
     return (

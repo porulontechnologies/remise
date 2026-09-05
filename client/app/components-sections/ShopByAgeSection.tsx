@@ -28,35 +28,40 @@ interface ShopByAgeSectionProps {
   previewData?: AgeGroupItem[];
 }
 
-const ShopByAge = memo(({ theme, isPreview = false, previewData = [] }: ShopByAgeSectionProps) => {
+const DEFAULT_AGE_PREVIEW: AgeGroupItem[] = [];
+
+const ShopByAge = memo(({ theme, isPreview = false, previewData = DEFAULT_AGE_PREVIEW }: ShopByAgeSectionProps) => {
   const router = useRouter(); // INITIALIZE ROUTER
-  const [items, setItems] = useState<AgeGroupItem[]>(previewData);
+  const [items, setItems] = useState<AgeGroupItem[]>(previewData || DEFAULT_AGE_PREVIEW);
   const [isLoading, setIsLoading] = useState(!isPreview);
 
   useEffect(() => {
     if (isPreview) {
-      setItems(previewData);
+      setItems(previewData || DEFAULT_AGE_PREVIEW);
       return;
     }
-
+    let isMounted = true;
     const fetchItems = async () => {
       try {
         // Updated fetch URL
         const response = await fetch(`${API_URL}/shopbyage`);
         const result = await response.json();
         
-        if (result.success && result.data.length > 0) {
+        if (isMounted && result.success && result.data.length > 0) {
           setItems(result.data);
         }
       } catch (error) {
         console.error('Error fetching shop by age data:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchItems();
-  }, [isPreview, previewData]);
+    return () => {
+      isMounted = false;
+    };
+  }, [isPreview, isPreview ? previewData : null]);
 
   // Click handler function for routing
   const handleCardClick = () => {

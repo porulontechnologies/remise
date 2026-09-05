@@ -85,34 +85,39 @@ const BentoItem = memo(({ item, theme, index }: { item: BentoItemType, theme: st
 
 BentoItem.displayName = 'BentoItem';
 
-const BentoGrid = memo(({ theme, isPreview = false, previewData = [] }: BentoGridSectionProps) => {
-  const [items, setItems] = useState<BentoItemType[]>(previewData);
+const DEFAULT_BENTO_PREVIEW: BentoItemType[] = [];
+
+const BentoGrid = memo(({ theme, isPreview = false, previewData = DEFAULT_BENTO_PREVIEW }: BentoGridSectionProps) => {
+  const [items, setItems] = useState<BentoItemType[]>(previewData || DEFAULT_BENTO_PREVIEW);
   const [isLoading, setIsLoading] = useState(!isPreview);
 
   useEffect(() => {
     if (isPreview) {
-      setItems(previewData);
+      setItems(previewData || DEFAULT_BENTO_PREVIEW);
       return;
     }
-
+    let isMounted = true;
     const fetchItems = async () => {
       try {
         const API_URL = "https://wow-lifebackend.onrender.com/api";
         const response = await fetch(`${API_URL}/bentogrid`);
         const result = await response.json();
         
-        if (result.success && result.data.length > 0) {
+        if (isMounted && result.success && result.data.length > 0) {
           setItems(result.data);
         }
       } catch (error) {
         console.error('Error fetching bento grid:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchItems();
-  }, [isPreview, previewData]);
+    return () => {
+      isMounted = false;
+    };
+  }, [isPreview, isPreview ? previewData : null]);
 
   if (isLoading) {
     return (
