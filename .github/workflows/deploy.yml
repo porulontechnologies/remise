@@ -15,13 +15,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Test VPS SSH connection
-        run: |
-          echo "Testing VPS SSH port 22..."
-          timeout 10 bash -c '</dev/tcp/${{ secrets.VPS_HOST }}/22' \
-            && echo "SUCCESS: VPS port 22 is reachable from GitHub Actions" \
-            || { echo "FAILED: VPS port 22 is NOT reachable from GitHub Actions"; exit 1; }
-
       - name: Create deployment archive
         run: |
           tar \
