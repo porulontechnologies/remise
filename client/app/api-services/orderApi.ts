@@ -1,17 +1,18 @@
 import axios from 'axios';
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+import { getApiBase } from '@/app/utils/api';
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 
 export const orderApi = {
   placeWholesaleOrder: (payload: any, token: string) =>
-    axios.post(`${BASE}/api/orders/wholesale`, payload, { headers: auth(token) }),
+    axios.post(`${getApiBase()}/api/orders/wholesale`, payload, { headers: auth(token) }),
 
   getMyWholesaleOrders: (buyerId: string, token: string) =>
-    axios.get(`${BASE}/api/orders/buyer/${buyerId}`, { headers: auth(token) }),
+    axios.get(`${getApiBase()}/api/orders/buyer/${buyerId}`, { headers: auth(token) }),
 
   getInvoice: (orderId: string) =>
-    axios.get(`${BASE}/api/orders/${orderId}/invoice`),
+    axios.get(`${getApiBase()}/api/orders/${orderId}/invoice`),
 
   getInvoicePdfUrl: (orderId: string) =>
-    `${BASE}/api/orders/${orderId}/invoice/pdf`,
-};
+    `${getApiBase()}/api/orders/${orderId}/invoice/pdf`,
+};
+

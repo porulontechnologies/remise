@@ -1,24 +1,28 @@
-export const resolveApiUrl = (): string => {
+export const getApiBase = (): string => {
   if (typeof window !== 'undefined') {
-    const origin = window.location.origin;
-    // If running in browser and NOT on localhost, use current domain's /api endpoint
     if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      const env = process.env.NEXT_PUBLIC_API_URL;
-      if (env && !env.includes('localhost')) {
-        const base = env.replace(/\/+$/, '');
-        return base.endsWith('/api') ? base : `${base}/api`;
-      }
-      return `${origin}/api`;
+      return window.location.origin;
     }
   }
   if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) {
-    const base = process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
-    return base.endsWith('/api') ? base : `${base}/api`;
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '').replace(/\/+$/, '');
   }
-  return 'http://localhost:3000/api';
+  return 'http://localhost:3000';
 };
 
-export const API_URL = resolveApiUrl();
+export const getApiUrl = (): string => {
+  const base = getApiBase();
+  return `${base}/api`;
+};
+
+export const resolveApiUrl = getApiUrl;
+export const resolveApiBase = getApiBase;
+
+export const API_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+  ? `${window.location.origin}/api`
+  : (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL
+      ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '').replace(/\/+$/, '')}/api`
+      : 'http://localhost:3000/api');
 
 export const resolveProductImageUrl = (url?: string): string => {
   if (!url) return '';
@@ -26,8 +30,6 @@ export const resolveProductImageUrl = (url?: string): string => {
     return url;
   }
   // Relative path (e.g. /uploads/products/...)
-  const baseUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-    ? window.location.origin
-    : (process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3003');
+  const baseUrl = getApiBase();
   return `${baseUrl.replace(/\/+$/, '')}${url.startsWith('/') ? '' : '/'}${url}`;
 };

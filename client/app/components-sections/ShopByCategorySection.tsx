@@ -27,7 +27,7 @@ import {
   Dumbbell,
   Package,
 } from "lucide-react";
-import { API_URL, resolveProductImageUrl } from '@/app/utils/api';
+import { getApiUrl, resolveProductImageUrl } from '@/app/utils/api';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   CarFront,
@@ -213,18 +213,25 @@ const ShopByCategory = memo(
     const [loading, setLoading] = useState(!isPreview);
     const isLight = theme === "light";
 
+    const [retryCount, setRetryCount] = useState(0);
+
     useEffect(() => {
       if (isPreview) {
         setItems(previewData);
         return;
       }
-      (async () => {
+      let isCancelled = false;
+
+      const loadCategories = async () => {
+        setLoading(true);
         try {
+          const originApi = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+            ? `${window.location.origin}/api`
+            : null;
+
           const endpoints = [
-            API_URL,
-            typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-              ? `${window.location.origin}/api`
-              : null,
+            originApi,
+            getApiUrl(),
             "http://localhost:3003/api",
             "http://localhost:3000/api",
             "http://localhost:5000/api",
@@ -267,6 +274,14 @@ const ShopByCategory = memo(
             } catch {
               // Try next endpoint
             }
+          }
+
+          if (products.length === 0 && apiCategories.length === 0 && retryCount < 2) {
+            // Auto retry once after a short delay
+            setTimeout(() => {
+              if (!isCancelled) setRetryCount((prev) => prev + 1);
+            }, 1200);
+            return;
           }
 
           const seen = new Set<string>();
@@ -313,14 +328,19 @@ const ShopByCategory = memo(
           // Show real database categories with inventory first
           const sorted = [...built].sort((a, b) => b.count - a.count);
           const withProducts = sorted.filter((item) => item.count > 0);
-          setItems(withProducts.length > 0 ? withProducts.slice(0, 6) : sorted.slice(0, 6));
+          if (!isCancelled) {
+            setItems(withProducts.length > 0 ? withProducts.slice(0, 6) : sorted.slice(0, 6));
+          }
         } catch {
-          setItems([]);
+          if (!isCancelled) setItems([]);
         } finally {
-          setLoading(false);
+          if (!isCancelled) setLoading(false);
         }
-      })();
-    }, [isPreview, previewData]);
+      };
+
+      loadCategories();
+      return () => { isCancelled = true; };
+    }, [isPreview, previewData, retryCount]);
 
     if (loading)
       return (
