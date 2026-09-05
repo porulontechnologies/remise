@@ -20,12 +20,10 @@ import { useWishlist } from "@/app/components-main/WishlistContext";
 import NavbarHome from "@/app/components-main/NavbarHome";
 import { isAuthenticated, redirectToLogin } from "@/app/utils/authGuard";
 import { AuthContext } from "@/app/context/AuthContext";
+import { API_URL } from '@/app/utils/api';
 
 // Roles that see store-owner pricing instead of the direct-customer price
 const STORE_OWNER_ROLES = ["store_owner", "whole_saler", "home_business"];
-
-// Define your backend API URL here
-const API_URL = "http://localhost:3003/api";
 
 // Same default category list used on the Store Dashboard (Categories/Products
 // tabs) — kept in sync so the pool of possible categories matches what an
@@ -383,7 +381,7 @@ export default function CategoryPage() {
   };
 
   /* ── Cart / buy handlers ── */
-    const handleAddToCart = (e: React.MouseEvent, product: any) => {
+  const handleAddToCart = (e: React.MouseEvent, product: any) => {
     e.stopPropagation();
     if (product.totalStock <= 0) return; // Prevent adding if out of stock
     if (!isAuthenticated()) {
@@ -1082,10 +1080,10 @@ export default function CategoryPage() {
                       const discount =
                         product.originalPrice > product.price
                           ? Math.round(
-                              ((product.originalPrice - product.price) /
-                                product.originalPrice) *
-                                100,
-                            )
+                            ((product.originalPrice - product.price) /
+                              product.originalPrice) *
+                            100,
+                          )
                           : 0;
 
                       const isOutOfStock = product.totalStock <= 0;

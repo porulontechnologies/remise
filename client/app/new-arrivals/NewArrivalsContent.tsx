@@ -22,9 +22,9 @@ import { useWishlist } from "@/app/components-main/WishlistContext";
 import NavbarHome from "@/app/components-main/NavbarHome";
 import { isAuthenticated, redirectToLogin } from "@/app/utils/authGuard";
 import { AuthContext } from "@/app/context/AuthContext";
+import { API_URL } from '@/app/utils/api';
 
 const STORE_OWNER_ROLES = ["store_owner", "whole_saler", "home_business"];
-const API_URL = "http://localhost:3003/api";
 const NEW_ARRIVAL_WINDOW_DAYS = 14;
 
 const FilterSection = ({ title, children, isOpenDefault = true, theme, activeCount = 0 }: any) => {

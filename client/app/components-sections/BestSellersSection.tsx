@@ -131,6 +131,7 @@ const ProductCard = memo(({ item, theme }: { item: BestSellerItem; theme: 'dark'
 ProductCard.displayName = 'ProductCard';
 
 const BestSellers = memo(({ theme = 'dark', isPreview = false, previewData = [] }: BestSellersSectionProps) => {
+  console.log('🔥 BEST SELLERS MOUNT/RENDER', Date.now());
   const router = useRouter();
   const [items, setItems] = useState<BestSellerItem[]>(previewData);
   const [loading, setLoading] = useState(!isPreview);

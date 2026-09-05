@@ -8,8 +8,7 @@ import { useCart } from "@/app/components-main/CartContext";
 import { useWishlist } from "@/app/components-main/WishlistContext";
 import NavbarHome from "@/app/components-main/NavbarHome";
 import { isAuthenticated, redirectToLogin } from "@/app/utils/authGuard";
-
-const API_URL = "http://localhost:3003/api";
+import { API_URL } from '@/app/utils/api';
 
 export default function BestSellersPage() {
   const router = useRouter();
@@ -208,12 +207,12 @@ export default function BestSellersPage() {
                       : product.imageUrl;
                   const discount =
                     product.discountedPrice != null &&
-                    product.discountedPrice < product.price
+                      product.discountedPrice < product.price
                       ? Math.round(
-                          ((product.price - product.discountedPrice) /
-                            product.price) *
-                            100,
-                        )
+                        ((product.price - product.discountedPrice) /
+                          product.price) *
+                        100,
+                      )
                       : 0;
                   const displayPrice =
                     discount > 0 ? product.discountedPrice : product.price;
@@ -271,8 +270,8 @@ export default function BestSellersPage() {
                             background: isWished
                               ? "#FFE5E5"
                               : isDark
-                              ? "rgba(13,13,13,0.5)"
-                              : "rgba(255,255,255,0.8)",
+                                ? "rgba(13,13,13,0.5)"
+                                : "rgba(255,255,255,0.8)",
                             border: `1px solid ${isWished ? "#FF0000" : border}`,
                           }}
                         >
