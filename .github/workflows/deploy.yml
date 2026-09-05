@@ -54,18 +54,18 @@ jobs:
           echo "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=30 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=45 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 
           echo "=== Testing SSH connection to $CLEAN_HOST on port $PORT ==="
           CONNECTED=0
-          for i in 1 2 3; do
-            echo "Connection attempt $i of 3..."
+          for i in 1 2 3 4 5; do
+            echo "Connection attempt $i of 5..."
             if ssh $SSH_OPTS -p "$PORT" -i ~/.ssh/id_rsa "${VPS_USER}@${CLEAN_HOST}" "echo 'SSH connection successful!'"; then
               CONNECTED=1
               break
             fi
-            echo "Attempt $i failed, retrying in 5 seconds..."
-            sleep 5
+            echo "Attempt $i failed (server may be busy building or restarting). Retrying in 10s..."
+            sleep 10
           done
 
           if [ "$CONNECTED" -ne 1 ]; then
